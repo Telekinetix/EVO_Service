@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="ecrlib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/bin/ecrlib.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <NATIVE>
+      <root url="file://$PROJECT_DIR$/bin" />
+      <root url="file://$PROJECT_DIR$/bin" />
+    </NATIVE>
+    <SOURCES />
+  </library>
+</component>
