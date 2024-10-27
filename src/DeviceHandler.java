@@ -1,6 +1,7 @@
 import ecrlib.api.enums.*;
 import ecrlib.api.tlv.*;
 import ecrlib.api.*;
+import models.CallbackMessage;
 import models.Config;
 import models.ErrorType;
 import models.EPOSMessage;
@@ -9,6 +10,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.NullPointerException;
+import java.util.Objects;
 
 public class DeviceHandler {
 
@@ -49,16 +51,19 @@ public class DeviceHandler {
   }
 
   public void setupEPOSCallback(DataOutputStream out) {
-    this.eposOutput = out;
+    synchronized (this.eposOutput) {
+      this.eposOutput = out;
+    }
   }
 
-  public void sendEPOSMessage(String msg) {
+  public void sendCallbackMessage(CallbackMessage msg) {
+    String json = Main.gson.toJson(msg) + (char) 3;
     if (this.eposOutput == null) {
       ErrorHandler.error(ErrorType.eposConnectionError, "EPOS connection not set up.");
     }
     synchronized (this.eposOutput) {
       try {
-        this.eposOutput.write(msg.getBytes());
+        this.eposOutput.write(json.getBytes());
       } catch (IOException e) {
         // Logs error locally if the socket dies.
         ErrorHandler.error(ErrorType.eposConnectionError, e, "Socket died while sending message to EPOS");
@@ -66,7 +71,7 @@ public class DeviceHandler {
     }
   }
 
-  public EPOSMessage waitForEPOSResponse() {
+  public EPOSMessage waitForCallbackResponse() {
     while (true) {
       synchronized (this.eposResponse) {
         if (eposResponse == null) continue;
@@ -75,7 +80,7 @@ public class DeviceHandler {
     }
   }
 
-  public void setEPOSResponse(EPOSMessage msg) {
+  public void setCallbackResponse(EPOSMessage msg) {
     while (true) {
       synchronized (this.eposResponse) {
         if (eposResponse != null) continue;
@@ -85,7 +90,7 @@ public class DeviceHandler {
     }
   }
 
-  public void clearEPOSResponse() {
+  public void clearCallbackResponse() {
     synchronized (this.eposResponse) {
       this.eposResponse = null;
     }
@@ -105,6 +110,15 @@ public class DeviceHandler {
     System.out.println("Attempting to cancel transaction. Status: " + status.name());
     return status == EcrStatus.ECR_OK;
   }
+
+  public EcrStatus getTerminalStatus() {
+    return terminalComm.getTerminalStatus();
+  }
+
+  public EcrTerminalStatus getTerminalState() {
+    return terminalComm.readTerminalStatus();
+  }
+
 
   public boolean executeSaleTransaction(String amount, boolean anotherTry) {
     if (!getStatus()) {
@@ -292,11 +306,7 @@ public class DeviceHandler {
     System.out.println(tid);
   }
 
-  public EcrTerminalStatus getTerminalStatus() {
-    if (!getStatus()) {
-      return null;
-    }
-    return terminalStatus;
+
 //
 //    switch (terminalStatus) {
 //      case STATUS_READY_FOR_NEW_TRAN:
@@ -318,7 +328,7 @@ public class DeviceHandler {
 //        System.out.print("Last operation is not completed.\n");
 //        break;
 //    }
-  }
+ // }
 
   public void handleBatch() {
     while (true) {

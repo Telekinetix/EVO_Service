@@ -1,5 +1,6 @@
 import com.google.gson.Gson;
 import ecrlib.api.enums.EcrStatus;
+import ecrlib.api.enums.EcrTerminalStatus;
 import models.Config;
 import models.EPOSMessage;
 import models.ErrorType;
@@ -14,7 +15,7 @@ import java.util.Date;
 import java.util.Objects;
 
 public class Main {
-  private static final Gson gson = new Gson();
+  public static final Gson gson = new Gson();
   public static void main(String[] args) {
     Config config = new ConfigHandler().loadConfig();
     DeviceHandler deviceHandler = new DeviceHandler();
@@ -114,13 +115,11 @@ public class Main {
 
     public void run() {
       if (this.deviceHandler.getTerminalStatus() == null) {
-        postToEPOS(ErrorHandler.buildErrorObject(ErrorType.deviceNotConnected));
+        postToEPOS(ErrorHandler.buildErrorObject(ErrorType.deviceConnectionError));
         return;
       }else {
         deviceHandler.setupEPOSCallback(out);
       }
-
-      IngenicoTerminalResponse resp = null;
 
       //Log a timestamp of when this transaction started
       SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -131,6 +130,7 @@ public class Main {
       System.out.println(logJson);
 
       if (Objects.equals(msg.type, "Sale")) {
+        boolean r = this.deviceHandler.executeSaleTransaction(msg.value, false);
         resp = ingenicoHandler.doSale(new BigDecimal(msg.value), msg.currency, msg.id);
       }
 //      else if (Objects.equals(msg.type, "Return")) {
@@ -143,7 +143,7 @@ public class Main {
 //        resp = ingenicoHandler.getEodReport();
 //      }
       else if (Objects.equals(msg.type, "Response")) {
-        this.deviceHandler.setEPOSResponse(msg);
+        this.deviceHandler.setCallbackResponse(msg);
       }
 
       String json = gson.toJson(resp) + (char) 4;

@@ -1,9 +1,10 @@
 import ecrlib.api.EcrCallbackDataInput;
 import ecrlib.api.EcrCallbacks;
 import ecrlib.api.enums.EcrTerminalStatus;
+import models.CallbackMessage;
 import models.EPOSMessage;
 
-import java.io.DataOutputStream;
+import java.util.Objects;
 
 public class DeviceCallbacks implements EcrCallbacks {
   private final DevicePrintoutHandler printoutHandler;
@@ -16,95 +17,178 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public void handleDevLog(String s) {
-
+    System.out.println(s);
   }
 
   @Override
   public void handleCommLog(String s) {
+    System.out.println(s);
 
   }
 
   @Override
   public void handleBusLog(String s) {
+    System.out.println(s);
   }
 
   @Override
   public void handleStatusChange(EcrTerminalStatus ecrTerminalStatus) {
-    this.deviceHandler.sendEPOSMessage("AAAAA");
+    var msg = new CallbackMessage("handleStatusChange");
+    msg.prompt = ecrTerminalStatus.name();
+    this.deviceHandler.sendCallbackMessage(msg);
   }
 
   @Override
   public boolean askForSignature(String s) {
     printoutHandler.generateMerchantPrintout();
-    this.deviceHandler.sendEPOSMessage("BBB");
-    EPOSMessage response = this.deviceHandler.waitForEPOSResponse();
     // TODO: get response from cashier
-    this.deviceHandler.clearEPOSResponse();
     return true;
   }
 
   @Override
-  public boolean askForCopy(String s) {
-    return false;
+  public boolean askForCopy(String prompt) {
+    var msg = new CallbackMessage("askForCopy");
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
+    EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+    String resp = response.value;
+    this.deviceHandler.clearCallbackResponse();
+    return Objects.equals(resp, "true");
   }
 
   @Override
-  public int askForCurrency(String[] strings) {
-    return 0;
+  public int askForCurrency(String[] options) {
+    var msg = new CallbackMessage("askForCurrency");
+    msg.values = options;
+    this.deviceHandler.sendCallbackMessage(msg);
+    EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+    String resp = response.value;
+    this.deviceHandler.clearCallbackResponse();
+    return Integer.parseInt(resp);
   }
 
   @Override
-  public int askForSelection(String[] strings, String s) {
-    return 0;
+  public int askForSelection(String[] options, String prompt) {
+    var msg = new CallbackMessage("askForSelection");
+    msg.prompt = prompt;
+    msg.values = options;
+    this.deviceHandler.sendCallbackMessage(msg);
+    EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+    String resp = response.value;
+    this.deviceHandler.clearCallbackResponse();
+    return Integer.parseInt(resp);
   }
 
   @Override
-  public boolean waitForCard(String s) {
-    return false;
+  public boolean waitForCard(String prompt) {
+    var msg = new CallbackMessage("waitForCard");
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
+    // non-blocking wait for card screen
+    return true;
   }
 
   @Override
-  public void waitForCardRemoval(String s) {
-
+  public void waitForCardRemoval(String prompt) {
+    var msg = new CallbackMessage("waitForCardRemoval");
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
   }
 
   @Override
-  public boolean waitForPin(String s) {
-    return false;
+  public boolean waitForPin(String prompt) {
+    var msg = new CallbackMessage("waitForPin");
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
+    // non-blocking wait for pin screen
+    return true;
   }
 
   @Override
-  public void showOkScreen(String s) {
-
+  public void showOkScreen(String prompt) {
+    var msg = new CallbackMessage("showOkScreen");
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
   }
 
   @Override
-  public boolean showYesNoScreen(String s) {
-    return false;
+  public boolean showYesNoScreen(String prompt) {
+    var msg = new CallbackMessage("showYesNoScreen");
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
+    EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+    String resp = response.value;
+    this.deviceHandler.clearCallbackResponse();
+    return Objects.equals(resp, "true");
   }
 
   @Override
-  public void showPromptScreen(String s) {
-
+  public void showPromptScreen(String prompt) {
+    var msg = new CallbackMessage("showPromptScreen");
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
   }
 
   @Override
-  public String getCashbackAmount(String s, int i, int i1) {
+  public String getCashbackAmount(String prompt, int minLength, int maxLength) {
+    // Not doing cashback
     return null;
   }
 
   @Override
-  public String getAuthorizationCode(String s, int i, int i1) {
-    return null;
+  public String getAuthorizationCode(String prompt, int minLength, int maxLength) {
+    var msg = new CallbackMessage("getAuthorizationCode");
+    msg.prompt = prompt;
+    msg.minLength = minLength;
+    msg.maxLength = maxLength;
+    this.deviceHandler.sendCallbackMessage(msg);
+    EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+    String resp = response.value;
+    this.deviceHandler.clearCallbackResponse();
+    return resp;
   }
 
   @Override
-  public String getUserData(String s, int i, int i1, EcrCallbackDataInput ecrCallbackDataInput) {
-    return null;
+  public String getUserData(String prompt, int minLength, int maxLength, EcrCallbackDataInput ecrCallbackDataInput) {
+    boolean isDataCorrect = false;
+    boolean anotherTry = false;
+    var msg = new CallbackMessage("getUserData");
+    msg.prompt = prompt;
+    msg.minLength = minLength;
+    msg.maxLength = maxLength;
+
+    String resp = null;
+
+    while (!isDataCorrect) {
+      this.deviceHandler.sendCallbackMessage(msg);
+      EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+      resp = response.value;
+      this.deviceHandler.clearCallbackResponse();
+      isDataCorrect = true;
+      for (int i = 0; i < resp.length(); i++) {
+        if (!ecrCallbackDataInput.isCharacterAllowed(resp.charAt(i))) {
+          if (!anotherTry) {
+            prompt = "Incorrect data typed - please try again.\n" + prompt;
+            anotherTry = true;
+          }
+          isDataCorrect = false;
+          break;
+        }
+      }
+    }
+    return resp;
   }
 
   @Override
-  public String getAmount(String s, int i, int i1) {
-    return null;
+  public String getAmount(String prompt, int minLength, int maxLength) {
+    var msg = new CallbackMessage("getAmount");
+    msg.prompt = prompt;
+    msg.minLength = minLength;
+    msg.maxLength = maxLength;
+    this.deviceHandler.sendCallbackMessage(msg);
+    EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+    String resp = response.value;
+    this.deviceHandler.clearCallbackResponse();
+    return resp;
   }
 }
