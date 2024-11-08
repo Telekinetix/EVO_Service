@@ -17,3 +17,7 @@ Service.iml
 .idea/tasks.xml
 *.zip
 /transactionLogs
+
+bus.*
+comm.*
+dev.*

@@ -33,7 +33,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public void handleStatusChange(EcrTerminalStatus ecrTerminalStatus) {
-    var msg = new CallbackMessage("handleStatusChange");
+    CallbackMessage msg = new CallbackMessage("handleStatusChange");
     msg.prompt = ecrTerminalStatus.name();
     this.deviceHandler.sendCallbackMessage(msg);
   }
@@ -47,7 +47,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public boolean askForCopy(String prompt) {
-    var msg = new CallbackMessage("askForCopy");
+    CallbackMessage msg = new CallbackMessage("askForCopy");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
     EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
@@ -58,7 +58,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public int askForCurrency(String[] options) {
-    var msg = new CallbackMessage("askForCurrency");
+    CallbackMessage msg = new CallbackMessage("askForCurrency");
     msg.values = options;
     this.deviceHandler.sendCallbackMessage(msg);
     EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
@@ -69,7 +69,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public int askForSelection(String[] options, String prompt) {
-    var msg = new CallbackMessage("askForSelection");
+    CallbackMessage msg = new CallbackMessage("askForSelection");
     msg.prompt = prompt;
     msg.values = options;
     this.deviceHandler.sendCallbackMessage(msg);
@@ -81,7 +81,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public boolean waitForCard(String prompt) {
-    var msg = new CallbackMessage("waitForCard");
+    CallbackMessage msg = new CallbackMessage("waitForCard");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
     // non-blocking wait for card screen
@@ -90,14 +90,14 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public void waitForCardRemoval(String prompt) {
-    var msg = new CallbackMessage("waitForCardRemoval");
+    CallbackMessage msg = new CallbackMessage("waitForCardRemoval");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
   }
 
   @Override
   public boolean waitForPin(String prompt) {
-    var msg = new CallbackMessage("waitForPin");
+    CallbackMessage msg = new CallbackMessage("waitForPin");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
     // non-blocking wait for pin screen
@@ -106,14 +106,14 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public void showOkScreen(String prompt) {
-    var msg = new CallbackMessage("showOkScreen");
+    CallbackMessage msg = new CallbackMessage("showOkScreen");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
   }
 
   @Override
   public boolean showYesNoScreen(String prompt) {
-    var msg = new CallbackMessage("showYesNoScreen");
+    CallbackMessage msg = new CallbackMessage("showYesNoScreen");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
     EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
@@ -124,7 +124,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public void showPromptScreen(String prompt) {
-    var msg = new CallbackMessage("showPromptScreen");
+    CallbackMessage msg = new CallbackMessage("showPromptScreen");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
   }
@@ -137,7 +137,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public String getAuthorizationCode(String prompt, int minLength, int maxLength) {
-    var msg = new CallbackMessage("getAuthorizationCode");
+    CallbackMessage msg = new CallbackMessage("getAuthorizationCode");
     msg.prompt = prompt;
     msg.minLength = minLength;
     msg.maxLength = maxLength;
@@ -152,7 +152,7 @@ public class DeviceCallbacks implements EcrCallbacks {
   public String getUserData(String prompt, int minLength, int maxLength, EcrCallbackDataInput ecrCallbackDataInput) {
     boolean isDataCorrect = false;
     boolean anotherTry = false;
-    var msg = new CallbackMessage("getUserData");
+    CallbackMessage msg = new CallbackMessage("getUserData");
     msg.prompt = prompt;
     msg.minLength = minLength;
     msg.maxLength = maxLength;
@@ -181,7 +181,7 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public String getAmount(String prompt, int minLength, int maxLength) {
-    var msg = new CallbackMessage("getAmount");
+    CallbackMessage msg = new CallbackMessage("getAmount");
     msg.prompt = prompt;
     msg.minLength = minLength;
     msg.maxLength = maxLength;

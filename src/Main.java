@@ -6,7 +6,6 @@ import models.EPOSMessage;
 import models.ErrorType;
 
 import java.io.*;
-import java.math.BigDecimal;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -129,24 +128,24 @@ public class Main {
       String logJson = gson.toJson(msg);
       System.out.println(logJson);
 
+      String response = "";
+
       if (Objects.equals(msg.type, "Sale")) {
-        boolean r = this.deviceHandler.executeSaleTransaction(msg.value, false);
-        resp = ingenicoHandler.doSale(new BigDecimal(msg.value), msg.currency, msg.id);
+        response = this.deviceHandler.doSale(msg.value);
       }
-//      else if (Objects.equals(msg.type, "Return")) {
-//        resp = ingenicoHandler.doRefund(new BigDecimal(msg.value), msg.currency, msg.id);
-//      } else if (Objects.equals(msg.type, "Cancel")) {
-//        resp = ingenicoHandler.cancelTransaction();
-//      } else if (Objects.equals(msg.type, "Status")) {
-//        resp = ingenicoHandler.getStatus();
-//      } else if (Objects.equals(msg.type, "EOD")) {
-//        resp = ingenicoHandler.getEodReport();
-//      }
+      else if (Objects.equals(msg.type, "Status")) {
+        EcrTerminalStatus res = this.deviceHandler.getTerminalState();
+        response = gson.toJson(res);
+      }
+      else if (Objects.equals(msg.type, "Batch")) {
+        response = this.deviceHandler.handleBatch();
+      }
       else if (Objects.equals(msg.type, "Response")) {
         this.deviceHandler.setCallbackResponse(msg);
+        return;
       }
 
-      String json = gson.toJson(resp) + (char) 4;
+      String json = response + (char) 4;
 
       //If processing a cancel transaction from EPOS, log the ingenico response
       formattedDate = sdf.format(new Date());

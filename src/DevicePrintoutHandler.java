@@ -9,117 +9,114 @@ import ecrlib.api.enums.PrintoutResult;
 
 public class DevicePrintoutHandler {
 
-    final int LINE_LENGTH = 40;
+  final int LINE_LENGTH = 40;
 
-    private EcrPaymentTerminal terminalComm;
-    private SimplePrintoutHandler simplePrintoutHandler;
-    private ExtendedPrintoutHandler extendedPrintoutHandler;
+  private final EcrPaymentTerminal terminalComm;
 
-    public DevicePrintoutHandler(EcrPaymentTerminal terminal) {
-        terminalComm = terminal;
+  public DevicePrintoutHandler(EcrPaymentTerminal terminal) {
+      terminalComm = terminal;
+  }
+
+  public String generateCustomerPrintout() {
+    return generatePrintout(terminalComm.getTransactionCustomerPrintoutHandler());
+  }
+
+  public String generateMerchantPrintout() {
+    return generatePrintout(terminalComm.getTransactionMerchantPrintoutHandler());
+  }
+
+  public String generatePrintout(SimplePrintoutHandler printoutHandler) {
+    printoutHandler.setNormalLineLength(LINE_LENGTH);
+    printoutHandler.setSmallLineLength(LINE_LENGTH);
+    printoutHandler.setBigLineLength(LINE_LENGTH);
+
+    PrintoutResult result = printoutHandler.preparePrintout();
+    if (result != PrintoutResult.PRINTOUT_OK) {
+      System.out.println("Printout result error.");
+      return "error";
     }
 
-    public void generateCustomerPrintout() {
-        simplePrintoutHandler = terminalComm.getTransactionCustomerPrintoutHandler();
-        generatePrintout();
+    System.out.println("Printout:");
+    StringBuilder out = new StringBuilder();
+    int lines = printoutHandler.getNumberOfLines();
+    for (int i=0; i<lines; i++) {
+      EcrPrintoutLine line = printoutHandler.getNextLine();
+      out.append(line.getLineNumber()).append(" ").append(line.getText()).append("\n");
+    }
+    System.out.println(out);
+    return out.toString();
+  }
+
+  public String generateReportFromBatch() {
+    EcrStatus status;
+
+    ExtendedPrintoutHandler printoutHandler = terminalComm.getClosingDayPrintoutHandler();
+
+    printoutHandler.setNormalLineLength(LINE_LENGTH);
+    printoutHandler.setSmallLineLength(LINE_LENGTH);
+    printoutHandler.setBigLineLength(LINE_LENGTH);
+
+    PrintoutResult result = printoutHandler.startPrintout();
+    if (PrintoutResult.PRINTOUT_OK != result) {
+        System.out.println("Printout report start error.");
+        return "start error";
     }
 
-    public void generateMerchantPrintout() {
-        simplePrintoutHandler = terminalComm.getTransactionMerchantPrintoutHandler();
-        generatePrintout();
+    int iterator = 1;
+    while (true) {
+      status = terminalComm.setTransactionId(iterator++);
+      if (status != EcrStatus.ECR_OK) {
+        System.out.println("Set transaction id error.");
+        return "id error";
+      }
+
+      status = terminalComm.getSingleTransactionFromBatch();
+      if (status == EcrStatus.ECR_OK) {
+        result = printoutHandler.addPrintoutEntry();
+      } else if (EcrStatus.ECR_NO_TERMINAL_DATA == status) {
+        System.out.println("End of data");
+        break;
+      } else {
+        System.out.println("Reading trans data error.");
+        return "trans data error";
+      }
     }
 
-    public void generatePrintout() {
-        simplePrintoutHandler.setNormalLineLength(LINE_LENGTH);
-        simplePrintoutHandler.setSmallLineLength(LINE_LENGTH);
-        simplePrintoutHandler.setBigLineLength(LINE_LENGTH);
-
-        PrintoutResult result = simplePrintoutHandler.preparePrintout();
-        if (PrintoutResult.PRINTOUT_OK != result) {
-            System.out.println("Printout result error.");
-            return;
-        }
-
-        System.out.println("Printout:");
-        int lines = simplePrintoutHandler.getNumberOfLines();
-        for (int i=0; i<lines; i++) {
-            EcrPrintoutLine line = simplePrintoutHandler.getNextLine();
-            int lineNumber = line.getLineNumber();
-            String text = line.getText();
-            System.out.println(Integer.toString(lineNumber) + " " + text + "\n");
-        }
+    status = terminalComm.getBatchSummary();
+    if (status != EcrStatus.ECR_OK) {
+      System.out.println("Get batch summary error.");
+      return "batch summary error";
     }
 
-    public void generateReportFromBatch() {
-        EcrStatus status;
-
-        extendedPrintoutHandler = terminalComm.getClosingDayPrintoutHandler();
-
-        extendedPrintoutHandler.setNormalLineLength(LINE_LENGTH);
-        extendedPrintoutHandler.setSmallLineLength(LINE_LENGTH);
-        extendedPrintoutHandler.setBigLineLength(LINE_LENGTH);
-
-        PrintoutResult result = extendedPrintoutHandler.startPrintout();
-        if (PrintoutResult.PRINTOUT_OK != result) {
-            System.out.println("Printout report start error.");
-            return;
-        }
-
-        int iterator = 1;
-        while (true) {
-            status = terminalComm.setTransactionId(iterator++);
-            if (EcrStatus.ECR_OK != status) {
-                System.out.println("Set transaction id error.");
-                return;
-            }
-
-            status = terminalComm.getSingleTransactionFromBatch();
-            if (EcrStatus.ECR_OK == status) {
-                result = extendedPrintoutHandler.addPrintoutEntry();
-            } else if (EcrStatus.ECR_NO_TERMINAL_DATA == status) {
-                System.out.println("End of data");
-                break;
-            } else {
-                System.out.println("Reading trans data error.");
-                return;
-            }
-        }
-
-        status = terminalComm.getBatchSummary();
-        if (EcrStatus.ECR_OK != status) {
-            System.out.println("Get batch summary error.");
-            return;
-        }
-
-        result = extendedPrintoutHandler.finishPrintout();
-        if (PrintoutResult.PRINTOUT_OK != result) {
-            System.out.println("Summary printout result error.");
-            return;
-        }
-
-        System.out.println("Printout:");
-        int lines = extendedPrintoutHandler.getNumberOfLines();
-        for (int i=0; i<lines; i++) {
-            EcrPrintoutLine line = extendedPrintoutHandler.getNextLine();
-            int lineNumber = line.getLineNumber();
-            String text = line.getText();
-            System.out.println(Integer.toString(lineNumber) + " " + text + "\n");
-           }
+    result = printoutHandler.finishPrintout();
+    if (result != PrintoutResult.PRINTOUT_OK) {
+      System.out.println("Summary printout result error.");
+      return "printout result error";
     }
 
-    public boolean isMerchantPrintoutNecessary() {
-        AuthorizationMethod method = terminalComm.readAuthorizationMethod();
-
-        if (AuthorizationMethod.AUTH_METHOD_SIGN != method &&
-                    AuthorizationMethod.AUTH_METHOD_PIN_SIGN != method) {
-            return true;
-        }
-
-        EcrTransactionResult result = terminalComm.readTransactionResult();
-
-        if (EcrTransactionResult.RESULT_TRANS_ACCEPTED != result) {
-            return true;
-        }
-        return false;
+    StringBuilder out = new StringBuilder();
+    System.out.println("Printout:");
+    int lines = printoutHandler.getNumberOfLines();
+    for (int i=0; i<lines; i++) {
+      EcrPrintoutLine line = printoutHandler.getNextLine();
+      out.append(line.getLineNumber()).append(" ").append(line.getText()).append("\n");
     }
+    System.out.println(out);
+    return out.toString();
+  }
+
+  public boolean isMerchantPrintoutNecessary() {
+    AuthorizationMethod method = terminalComm.readAuthorizationMethod();
+
+    if (method != AuthorizationMethod.AUTH_METHOD_SIGN && method != AuthorizationMethod.AUTH_METHOD_PIN_SIGN) {
+      return true;
+    }
+
+    EcrTransactionResult result = terminalComm.readTransactionResult();
+
+    if (result != EcrTransactionResult.RESULT_TRANS_ACCEPTED) {
+      return true;
+    }
+    return false;
+  }
 }

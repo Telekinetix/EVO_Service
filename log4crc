@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE log4c SYSTEM "">
+
+<log4c>
+
+	<config>
+		<bufsize>16384</bufsize>
+		<debug level="1"/>
+		<nocleanup>0</nocleanup>
+		<reread>1</reread>
+	</config>
+
+	<category name="developerFile" priority="trace" appender="devFileAppender"/>
+	<category name="communicationFile" priority="trace" appender="commFileAppender"/>
+	<category name="businessFile" priority="trace" appender="busFileAppender"/>
+
+	<rollingpolicy name="myrollingpolicy1" type="sizewin" maxsize="2560000" maxnum="20" />
+	<rollingpolicy name="myrollingpolicy2" type="sizewin" maxsize="2560000" maxnum="20" />
+	<rollingpolicy name="myrollingpolicy3" type="sizewin" maxsize="2560000" maxnum="20" />
+
+	<appender name="devFileAppender" type="rollingfile" logdir="." prefix="dev" layout="dated" rollingpolicy="myrollingpolicy1" />
+	<appender name="commFileAppender" type="rollingfile" logdir="." prefix="comm" layout="dated" rollingpolicy="myrollingpolicy2" />
+	<appender name="busFileAppender" type="rollingfile" logdir="." prefix="bus" layout="dated" rollingpolicy="myrollingpolicy3" />
+	
+	<!-- default appenders ===================================== -->
+	<appender name="stdout" type="stream" layout="basic"/>
+	<appender name="stderr" type="stream" layout="dated"/>
+	<appender name="syslog" type="syslog" layout="basic"/>
+
+	<!-- default layouts ======================================= -->
+	<layout name="basic" type="basic"/>
+	<layout name="dated" type="dated_local"/>
+</log4c>
