@@ -1,3 +1,4 @@
+import com.google.gson.Gson;
 import ecrlib.api.EcrPaymentTerminal;
 import ecrlib.api.EcrPrintoutLine;
 import ecrlib.api.ExtendedPrintoutHandler;
@@ -30,21 +31,25 @@ public class DevicePrintoutHandler {
     printoutHandler.setSmallLineLength(LINE_LENGTH);
     printoutHandler.setBigLineLength(LINE_LENGTH);
 
+
     PrintoutResult result = printoutHandler.preparePrintout();
     if (result != PrintoutResult.PRINTOUT_OK) {
       System.out.println("Printout result error.");
       return "error";
     }
+    Gson gson = new Gson();
 
     System.out.println("Printout:");
     StringBuilder out = new StringBuilder();
+
     int lines = printoutHandler.getNumberOfLines();
     for (int i=0; i<lines; i++) {
       EcrPrintoutLine line = printoutHandler.getNextLine();
-      out.append(line.getLineNumber()).append(" ").append(line.getText()).append("\n");
+      String x = gson.toJson(line);
+      out.append(x).append(",\n");
     }
     System.out.println(out);
-    return out.toString();
+    return "[" + out.toString() + "]";
   }
 
   public String generateReportFromBatch() {

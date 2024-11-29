@@ -21,6 +21,7 @@ public class DeviceHandler {
   private EcrTerminalStatus terminalStatus;
 
   private DataOutputStream eposOutput;
+  public final Object lock = new Object();
   private EPOSMessage eposResponse;
 
   static {
@@ -44,7 +45,7 @@ public class DeviceHandler {
   }
 
   public void setupEPOSCallback(DataOutputStream out) {
-    synchronized (this.eposOutput) {
+    synchronized (lock) {
       this.eposOutput = out;
     }
   }
@@ -54,7 +55,7 @@ public class DeviceHandler {
     if (this.eposOutput == null) {
       ErrorHandler.error(ErrorType.eposConnectionError, "EPOS connection not set up.");
     }
-    synchronized (this.eposOutput) {
+    synchronized (lock) {
       try {
         this.eposOutput.write(json.getBytes());
       } catch (IOException e) {
@@ -66,7 +67,7 @@ public class DeviceHandler {
 
   public EPOSMessage waitForCallbackResponse() {
     while (true) {
-      synchronized (this.eposResponse) {
+      synchronized (lock) {
         if (eposResponse == null) continue;
         return eposResponse;
       }
@@ -75,7 +76,7 @@ public class DeviceHandler {
 
   public void setCallbackResponse(EPOSMessage msg) {
     while (true) {
-      synchronized (this.eposResponse) {
+      synchronized (lock) {
         if (eposResponse != null) continue;
         this.eposResponse = msg;
         return;
@@ -84,7 +85,7 @@ public class DeviceHandler {
   }
 
   public void clearCallbackResponse() {
-    synchronized (this.eposResponse) {
+    synchronized (lock) {
       this.eposResponse = null;
     }
   }
@@ -98,12 +99,6 @@ public class DeviceHandler {
     return true;
   }
 
-  public boolean cancelTransaction() {
-    EcrStatus status = terminalComm.cancelTransaction();
-    System.out.println("Attempting to cancel transaction. Status: " + status.name());
-    return status == EcrStatus.ECR_OK;
-  }
-
   public EcrStatus getTerminalStatus() {
     return terminalComm.getTerminalStatus();
   }
@@ -112,6 +107,22 @@ public class DeviceHandler {
     return terminalComm.readTerminalStatus();
   }
 
+  public String continueTransaction() {
+    EcrStatus status = terminalComm.continueTransaction();
+    if (EcrStatus.ECR_OK != status) {
+      return "error";
+    }
+
+    EcrTransactionResult result = terminalComm.readTransactionResult();
+    if (result != null) {
+      String merchant = printoutHandler.generateMerchantPrintout();
+      String customer = printoutHandler.generateCustomerPrintout();
+      return customer;
+    }
+    else {
+      return "error";
+    }
+  }
 
   public String doSale(String amount) {
     EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_SALE);
@@ -260,7 +271,7 @@ public class DeviceHandler {
   public String handleBatch() {
     StringBuilder out = new StringBuilder();
     while (true) {
-      if (getTerminalState() == EcrTerminalStatus.STATUS_BATCH_COMPLETED) {
+      if (getTerminalState() != EcrTerminalStatus.STATUS_BATCH_COMPLETED) {
         return out.toString();
       }
       out.append(printoutHandler.generateReportFromBatch());

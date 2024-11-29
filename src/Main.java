@@ -75,7 +75,6 @@ public class Main {
         } catch (IOException e) {
           // Logs error locally if the socket dies.
           ErrorHandler.error(ErrorType.eposConnectionError, e, "Socket died while receiving message from EPOS");
-          deviceHandler.cancelTransaction(); // kill transaction - UNTESTED
           return;
         }
       }
@@ -113,11 +112,10 @@ public class Main {
     }
 
     public void run() {
+      deviceHandler.setupEPOSCallback(out);
       if (this.deviceHandler.getTerminalStatus() == null) {
         postToEPOS(ErrorHandler.buildErrorObject(ErrorType.deviceConnectionError));
         return;
-      }else {
-        deviceHandler.setupEPOSCallback(out);
       }
 
       //Log a timestamp of when this transaction started
@@ -144,6 +142,9 @@ public class Main {
         this.deviceHandler.setCallbackResponse(msg);
         return;
       }
+      else if (Objects.equals(msg.type, "Continue")) {
+        response = this.deviceHandler.continueTransaction();
+      }
 
       String json = response + (char) 4;
 
@@ -160,7 +161,7 @@ public class Main {
 
     public void postToEPOS(byte[] data) {
       try {
-        synchronized (out) {
+        synchronized (deviceHandler.lock) {
           out.write(data);
         }
       } catch (IOException e) {
