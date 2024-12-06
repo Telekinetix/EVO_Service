@@ -134,7 +134,8 @@ public class Main {
       }
       else if (Objects.equals(msg.type, "Status")) {
         EcrTerminalStatus res = this.deviceHandler.getTerminalState();
-        response = res.name();
+        response = "{\"status\": \"" + res.name() + "\"}";
+
       }
       else if (Objects.equals(msg.type, "Batch")) {
         response = "{\"batchData\": \"" + this.deviceHandler.handleBatch() + "\"}";
