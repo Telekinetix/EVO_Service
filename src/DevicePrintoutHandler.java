@@ -46,7 +46,7 @@ public class DevicePrintoutHandler {
     for (int i=0; i<lines; i++) {
       EcrPrintoutLine line = printoutHandler.getNextLine();
       String x = gson.toJson(line);
-      out.append(x).append(",\n");
+      out.append(x).append(",");
     }
     System.out.println(out);
     return "[" + out.toString() + "]";
