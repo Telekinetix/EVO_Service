@@ -39,10 +39,16 @@ public class DeviceCallbacks implements EcrCallbacks {
   }
 
   @Override
-  public boolean askForSignature(String s) {
-    printoutHandler.generateMerchantPrintout();
-    // TODO: get response from cashier
-    return true;
+  public boolean askForSignature(String prompt) {
+    String receiptToSign = printoutHandler.generateMerchantPrintout();
+    CallbackMessage msg = new CallbackMessage("askForSignature");
+    msg.value = receiptToSign;
+    msg.prompt = prompt;
+    this.deviceHandler.sendCallbackMessage(msg);
+    EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
+    String resp = response.value;
+    this.deviceHandler.clearCallbackResponse();
+    return Objects.equals(resp, "true");
   }
 
   @Override

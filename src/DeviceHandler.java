@@ -21,7 +21,8 @@ public class DeviceHandler {
   private EcrTerminalStatus terminalStatus;
 
   private DataOutputStream eposOutput;
-  public final Object lock = new Object();
+  public final Object eposLock = new Object();
+  public final Object callbackLock = new Object();
   private EPOSMessage eposResponse;
 
   static {
@@ -45,29 +46,35 @@ public class DeviceHandler {
   }
 
   public void setupEPOSCallback(DataOutputStream out) {
-    synchronized (lock) {
+    synchronized (eposLock) {
       this.eposOutput = out;
     }
   }
 
   public void sendCallbackMessage(CallbackMessage msg) {
     String json = Main.gson.toJson(msg) + (char) 3;
+    System.out.println(json);
     if (this.eposOutput == null) {
       ErrorHandler.error(ErrorType.eposConnectionError, "EPOS connection not set up.");
     }
-    synchronized (lock) {
-      try {
-        this.eposOutput.write(json.getBytes());
-      } catch (IOException e) {
-        // Logs error locally if the socket dies.
-        ErrorHandler.error(ErrorType.eposConnectionError, e, "Socket died while sending message to EPOS");
+    else {
+      postToEPOS(json.getBytes());
+    }
+  }
+
+  public void postToEPOS(byte[] data) {
+    try {
+      synchronized (eposLock) {
+        this.eposOutput.write(data);
       }
+    } catch (IOException e) {
+      ErrorHandler.error(ErrorType.eposConnectionError, e, "Socket died while sending message to EPOS"); // Logs error locally if the socket dies.
     }
   }
 
   public EPOSMessage waitForCallbackResponse() {
     while (true) {
-      synchronized (lock) {
+      synchronized (callbackLock) {
         if (eposResponse == null) continue;
         return eposResponse;
       }
@@ -76,7 +83,7 @@ public class DeviceHandler {
 
   public void setCallbackResponse(EPOSMessage msg) {
     while (true) {
-      synchronized (lock) {
+      synchronized (callbackLock) {
         if (eposResponse != null) continue;
         this.eposResponse = msg;
         return;
@@ -85,7 +92,7 @@ public class DeviceHandler {
   }
 
   public void clearCallbackResponse() {
-    synchronized (lock) {
+    synchronized (callbackLock) {
       this.eposResponse = null;
     }
   }
@@ -110,17 +117,17 @@ public class DeviceHandler {
   public String continueTransaction() {
     EcrStatus status = terminalComm.continueTransaction();
     if (EcrStatus.ECR_OK != status) {
-      return "error";
+      return "{\"status\": \"error\"}";
     }
 
     EcrTransactionResult result = terminalComm.readTransactionResult();
     if (result != null) {
       String merchant = printoutHandler.generateMerchantPrintout();
       String customer = printoutHandler.generateCustomerPrintout();
-      return customer;
+      return "{\"merchant\":" + merchant + "\", \"customer\": \"" + customer + "\"}";
     }
     else {
-      return "error";
+      return "{\"status\": \"error\"}";
     }
   }
 
@@ -143,7 +150,8 @@ public class DeviceHandler {
     if (status != EcrStatus.ECR_OK) {
       // TODO: log here -
       System.out.print("failed to start transaction.\n");
-      return "error";
+      return "{\"status\": \"error\"}";
+
       // return emergencyProcedureForTransaction(true);
     }
 
@@ -151,10 +159,10 @@ public class DeviceHandler {
     if (result != null) {
       String merchant = printoutHandler.generateMerchantPrintout();
       String customer = printoutHandler.generateCustomerPrintout();
-      return customer;
+      return "\"merchant\":" + merchant + "\", \"customer\": \"" + customer + "\"}";
     }
     else {
-      return "error";
+      return "{\"status\": \"error\"}";
     }
   }
 //
@@ -274,7 +282,7 @@ public class DeviceHandler {
       if (getTerminalState() != EcrTerminalStatus.STATUS_BATCH_COMPLETED) {
         return out.toString();
       }
-      out.append(printoutHandler.generateReportFromBatch());
+    out.append(printoutHandler.generateReportFromBatch());
     }
   }
 

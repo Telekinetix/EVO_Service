@@ -1,6 +1,7 @@
 import com.google.gson.Gson;
 import ecrlib.api.enums.EcrStatus;
 import ecrlib.api.enums.EcrTerminalStatus;
+import models.CallbackMessage;
 import models.Config;
 import models.EPOSMessage;
 import models.ErrorType;
@@ -114,7 +115,7 @@ public class Main {
     public void run() {
       deviceHandler.setupEPOSCallback(out);
       if (this.deviceHandler.getTerminalStatus() == null) {
-        postToEPOS(ErrorHandler.buildErrorObject(ErrorType.deviceConnectionError));
+        this.deviceHandler.postToEPOS(ErrorHandler.buildErrorObject(ErrorType.deviceConnectionError));
         return;
       }
 
@@ -133,10 +134,10 @@ public class Main {
       }
       else if (Objects.equals(msg.type, "Status")) {
         EcrTerminalStatus res = this.deviceHandler.getTerminalState();
-        response = gson.toJson(res);
+        response = res.name();
       }
       else if (Objects.equals(msg.type, "Batch")) {
-        response = this.deviceHandler.handleBatch();
+        response = "{\"batchData\": \"" + this.deviceHandler.handleBatch() + "\"}";
       }
       else if (Objects.equals(msg.type, "Response")) {
         this.deviceHandler.setCallbackResponse(msg);
@@ -156,18 +157,9 @@ public class Main {
         System.out.println(formattedDate + " - " + msg.type + " completed. Sending response to EPOS");
       }
 
-      postToEPOS(json.getBytes());
+      this.deviceHandler.postToEPOS(json.getBytes());
     }
 
-    public void postToEPOS(byte[] data) {
-      try {
-        synchronized (deviceHandler.lock) {
-          out.write(data);
-        }
-      } catch (IOException e) {
-        ErrorHandler.error(ErrorType.eposConnectionError, e); // Logs error locally if the socket dies.
-      }
-    }
   }
 }
 
