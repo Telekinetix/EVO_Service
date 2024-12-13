@@ -1,4 +1,6 @@
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import ecrlib.api.EcrPaymentTerminal;
 import ecrlib.api.EcrPrintoutLine;
 import ecrlib.api.ExtendedPrintoutHandler;
@@ -7,6 +9,9 @@ import ecrlib.api.enums.AuthorizationMethod;
 import ecrlib.api.enums.EcrStatus;
 import ecrlib.api.enums.EcrTransactionResult;
 import ecrlib.api.enums.PrintoutResult;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DevicePrintoutHandler {
 
@@ -18,15 +23,15 @@ public class DevicePrintoutHandler {
       terminalComm = terminal;
   }
 
-  public String generateCustomerPrintout() {
+  public JsonArray generateCustomerPrintout() throws Exception {
     return generatePrintout(terminalComm.getTransactionCustomerPrintoutHandler());
   }
 
-  public String generateMerchantPrintout() {
+  public JsonArray generateMerchantPrintout() throws Exception {
     return generatePrintout(terminalComm.getTransactionMerchantPrintoutHandler());
   }
 
-  public String generatePrintout(SimplePrintoutHandler printoutHandler) {
+  public JsonArray generatePrintout(SimplePrintoutHandler printoutHandler) throws Exception {
     printoutHandler.setNormalLineLength(LINE_LENGTH);
     printoutHandler.setSmallLineLength(LINE_LENGTH);
     printoutHandler.setBigLineLength(LINE_LENGTH);
@@ -34,25 +39,20 @@ public class DevicePrintoutHandler {
 
     PrintoutResult result = printoutHandler.preparePrintout();
     if (result != PrintoutResult.PRINTOUT_OK) {
-      System.out.println("Printout result error.");
-      return "error";
+      throw new Exception("Printout result error.");
     }
-    Gson gson = new Gson();
 
-    System.out.println("Printout:");
-    StringBuilder out = new StringBuilder();
+    JsonArray lineList = new JsonArray();
 
     int lines = printoutHandler.getNumberOfLines();
     for (int i=0; i<lines; i++) {
       EcrPrintoutLine line = printoutHandler.getNextLine();
-      String x = gson.toJson(line);
-      out.append(x).append(",");
+      lineList.add(Main.gson.toJsonTree(line));
     }
-    System.out.println(out);
-    return "[" + out.toString() + "]";
+    return lineList;
   }
 
-  public String generateReportFromBatch() {
+  public JsonArray generateReportFromBatch() throws Exception {
     EcrStatus status;
 
     ExtendedPrintoutHandler printoutHandler = terminalComm.getClosingDayPrintoutHandler();
@@ -63,16 +63,14 @@ public class DevicePrintoutHandler {
 
     PrintoutResult result = printoutHandler.startPrintout();
     if (PrintoutResult.PRINTOUT_OK != result) {
-        System.out.println("Printout report start error.");
-        return "start error";
+        throw new Exception("Start Error");
     }
 
     int iterator = 1;
     while (true) {
       status = terminalComm.setTransactionId(iterator++);
       if (status != EcrStatus.ECR_OK) {
-        System.out.println("Set transaction id error.");
-        return "id error";
+        throw new Exception("Set Transaction ID Error");
       }
 
       status = terminalComm.getSingleTransactionFromBatch();
@@ -82,32 +80,27 @@ public class DevicePrintoutHandler {
         System.out.println("End of data");
         break;
       } else {
-        System.out.println("Reading trans data error.");
-        return "trans data error";
+        throw new Exception("Transaction data reading error");
       }
     }
 
     status = terminalComm.getBatchSummary();
     if (status != EcrStatus.ECR_OK) {
-      System.out.println("Get batch summary error.");
-      return "batch summary error";
+      throw new Exception("Get batch summary error");
     }
 
     result = printoutHandler.finishPrintout();
     if (result != PrintoutResult.PRINTOUT_OK) {
-      System.out.println("Summary printout result error.");
-      return "printout result error";
-    }
+      throw new Exception("Summary printout result error");
+     }
 
-    StringBuilder out = new StringBuilder();
-    System.out.println("Printout:");
+    JsonArray lineList = new JsonArray();
     int lines = printoutHandler.getNumberOfLines();
     for (int i=0; i<lines; i++) {
       EcrPrintoutLine line = printoutHandler.getNextLine();
-      out.append(line.getLineNumber()).append(" ").append(line.getText()).append("\n");
+      lineList.add(line.getText());
     }
-    System.out.println(out);
-    return out.toString();
+    return lineList;
   }
 
   public boolean isMerchantPrintoutNecessary() {

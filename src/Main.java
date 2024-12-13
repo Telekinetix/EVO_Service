@@ -1,10 +1,11 @@
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import ecrlib.api.enums.EcrStatus;
 import ecrlib.api.enums.EcrTerminalStatus;
-import models.CallbackMessage;
 import models.Config;
 import models.EPOSMessage;
 import models.ErrorType;
+import models.ResponseMessage;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -127,38 +128,32 @@ public class Main {
       String logJson = gson.toJson(msg);
       System.out.println(logJson);
 
-
-      String response = "";
+      ResponseMessage responseMessage = new ResponseMessage("error");
+      responseMessage.prompt = "Unknown action requested.";
 
       if (Objects.equals(msg.type, "Sale")) {
-        response = this.deviceHandler.doSale(msg.value);
+        responseMessage = this.deviceHandler.doSale(msg.value);
       }
       else if (Objects.equals(msg.type, "Status")) {
         EcrTerminalStatus res = this.deviceHandler.getTerminalState();
-        response = "{\"status\": \"" + res.name() + "\"}";
-
+        responseMessage = new ResponseMessage("success");
+        responseMessage.status = res.name();
       }
       else if (Objects.equals(msg.type, "Batch")) {
-        response = "{\"batchData\": \"" + this.deviceHandler.handleBatch() + "\"}";
+        responseMessage = this.deviceHandler.handleBatch();
+      }
+      else if (Objects.equals(msg.type, "Reconcile")) {
+        responseMessage = this.deviceHandler.forceReconciliation();
+      }
+      else if (Objects.equals(msg.type, "Continue")) {
+        responseMessage = this.deviceHandler.continueTransaction();
       }
       else if (Objects.equals(msg.type, "Response")) {
         this.deviceHandler.setCallbackResponse(msg);
         return;
       }
-      else if (Objects.equals(msg.type, "Continue")) {
-        response = this.deviceHandler.continueTransaction();
-      }
 
-      String json = response + (char) 4 + (char) 3;
-
-      //If processing a cancel transaction from EPOS, log the ingenico response
-      formattedDate = sdf.format(new Date());
-      if (Objects.equals(msg.type, "Cancel")) {
-        System.out.println(formattedDate + " - " + json);
-      } else {
-        System.out.println(formattedDate + " - " + msg.type + " completed. Sending response to EPOS");
-      }
-
+      String json = gson.toJson(responseMessage) + (char) 4 + (char) 3;
       this.deviceHandler.postToEPOS(json.getBytes());
     }
 

@@ -1,16 +1,16 @@
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import ecrlib.api.enums.*;
-import ecrlib.api.tlv.*;
 import ecrlib.api.*;
-import models.CallbackMessage;
+import models.ResponseMessage;
 import models.Config;
 import models.ErrorType;
 import models.EPOSMessage;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.NullPointerException;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DeviceHandler {
 
@@ -51,7 +51,7 @@ public class DeviceHandler {
     }
   }
 
-  public void sendCallbackMessage(CallbackMessage msg) {
+  public void sendCallbackMessage(ResponseMessage msg) {
     String json = Main.gson.toJson(msg) + (char) 3;
     System.out.println(json);
     if (this.eposOutput == null) {
@@ -114,175 +114,143 @@ public class DeviceHandler {
     return terminalComm.readTerminalStatus();
   }
 
-  public String continueTransaction() {
+  public ResponseMessage continueTransaction() {
     EcrStatus status = terminalComm.continueTransaction();
     if (EcrStatus.ECR_OK != status) {
-      return "{\"status\": \"error\"}";
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when continuing transaction.";
+      error.status = status.name();
+      return error;
     }
 
     EcrTransactionResult result = terminalComm.readTransactionResult();
     if (result != null) {
-      String merchant = printoutHandler.generateMerchantPrintout();
-      String customer = printoutHandler.generateCustomerPrintout();
-      return "{\"merchant\":" + merchant + "\", \"customer\": \"" + customer + "\"}";
+      try {
+        JsonArray merchant = printoutHandler.generateMerchantPrintout();
+        JsonArray customer = printoutHandler.generateCustomerPrintout();
+        ResponseMessage response = new ResponseMessage("success");
+        JsonObject valueObject = new JsonObject();
+        valueObject.add("merchant", merchant);
+        valueObject.add("customer", customer);
+        response.value = valueObject;
+        return response;
+      }
+      catch (Exception e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = e.getMessage();
+        return error;
+      }
     }
     else {
-      return "{\"status\": \"error\"}";
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when reading transaction result.";
+      return error;
     }
   }
 
-  public String doSale(String amount) {
+  public ResponseMessage doSale(String amount) {
     EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_SALE);
     if (status != EcrStatus.ECR_OK) {
-      // TODO: log here -
-      System.out.print("Set transaction type. Unexpected error.\n");
-      return "error";
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting transaction type.";
+      error.status = status.name();
+      return error;
     }
 
     status = terminalComm.setTransactionAmount(amount);
     if (status != EcrStatus.ECR_OK) {
-      // TODO: log here -
-      System.out.print("Set transaction amount. Unexpected error.\n");
-      return "error";
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting transaction amount.";
+      error.status = status.name();
+      return error;
     }
 
     status = terminalComm.startTransaction();
     if (status != EcrStatus.ECR_OK) {
-      // TODO: log here -
-      System.out.print("failed to start transaction.\n");
-      return "{\"status\": \"error\"}";
-
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting starting transaction.";
+      error.status = status.name();
+      return error;
       // return emergencyProcedureForTransaction(true);
     }
 
     EcrTransactionResult result = terminalComm.readTransactionResult();
     if (result != null) {
-      String merchant = printoutHandler.generateMerchantPrintout();
-      String customer = printoutHandler.generateCustomerPrintout();
-      return "\"merchant\":" + merchant + "\", \"customer\": \"" + customer + "\"}";
+      try {
+        JsonArray merchant = printoutHandler.generateMerchantPrintout();
+        JsonArray customer = printoutHandler.generateCustomerPrintout();
+        ResponseMessage response = new ResponseMessage("success");
+        JsonObject valueObject = new JsonObject();
+        valueObject.add("merchant", merchant);
+        valueObject.add("customer", customer);
+
+        response.value = valueObject;
+        return response;
+      }
+      catch (Exception e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = e.getMessage();
+        return error;
+      }
     }
     else {
-      return "{\"status\": \"error\"}";
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when reading transaction result.";
+      return error;
     }
   }
-//
-//  public void forceConnectionTestToAuthorizationHost() {
-//    if (!getStatus()) {
-//      System.out.println("Force connection test to authorization host. Connection error.");
-//      return;
-//    }
-//
-//    if (!checkTerminalStatus(EcrTerminalStatus.STATUS_READY_FOR_NEW_TRAN)) {
-//      System.out.println("Force connection test to authorization host. Unexpected error.");
-//      return;
-//    }
-//
-//    var status = terminalComm.setTransactionType(EcrTransactionType.TRANS_TEST_CONNECTION);
-//    if (EcrStatus.ECR_OK != status) {
-//      System.out.println("Force connection test to authorization host. Set transaction type error.");
-//      return;
-//    }
-//
-//    status = terminalComm.startTransaction();
-//    if (EcrStatus.ECR_OK != status) {
-//      System.out.println("Force connection test to authorization host. Start transaction error.");
-//      return;
-//    }
-//
-//    EcrTransactionResult result = terminalComm.readTransactionResult();
-//    if (null == result) {
-//      System.out.println("Error: No information about connection test result");
-//      return;
-//    }
-//
-//    switch (result) {
-//      case RESULT_TRANS_ACCEPTED:
-//        System.out.println("Connection test succeed.");
-//        break;
-//      case RESULT_TRANS_REFUSED:
-//        System.out.println("Connection test failed.");
-//        break;
-//      case RESULT_NO_CONNECTION:
-//        System.out.println("Connection test failed - no connection.");
-//        break;
-//      case RESULT_TRANS_INTERRUPTED_BY_USER:
-//        System.out.println("Operation interrupted by user.");
-//        break;
-//      default:
-//        System.out.println("Unknown operation result.");
-//        break;
-//    }
-//  }
-//
-//  public void forceConnectionToTMS() {
-//    if (!getStatus()) {
-//      System.out.println("Force connection test to TMS. Connection error.");
-//      return;
-//    }
-//
-//    if (!checkTerminalStatus(EcrTerminalStatus.STATUS_READY_FOR_NEW_TRAN)) {
-//      System.out.println("Force connection test to TMS. Unexpected error.");
-//      return;
-//    }
-//
-//    var status = terminalComm.setTransactionType(EcrTransactionType.TRANS_TMS);
-//    if (EcrStatus.ECR_OK != status) {
-//      System.out.println("Force connection test to TMS. Set transaction type error.");
-//      return;
-//    }
-//    status = terminalComm.startTransaction();
-//  }
-//
-//  public void forceReconciliation() {
-//    if (!getStatus()) {
-//      System.out.print("Force reconciliation. Connection error.\n");
-//      return;
-//    }
-//
-//    if (!checkTerminalStatus(EcrTerminalStatus.STATUS_READY_FOR_NEW_TRAN)
-//        && !checkTerminalStatus(EcrTerminalStatus.STATUS_RECON_NEEDED)) {
-//      System.out.print("Force reconciliation. Unexpected error.\n");
-//      return;
-//    }
-//
-//    var status = terminalComm.setTransactionType(EcrTransactionType.TRANS_RECONCILE);
-//    if (EcrStatus.ECR_OK != status) {
-//      System.out.println("Setting transaction to reconciliation error.");
-//      return;
-//    }
-//
-//    status = terminalComm.startTransaction();
-//    if (EcrStatus.ECR_OK != status) {
-//      System.out.println("Starting reconciliation transaction error.");
-//      return;
-//    }
-//
-//    EcrTransactionResult result = terminalComm.readTransactionResult();
-//    if (null == result) {
-//      System.out.println("Transaction result null error.");
-//      return;
-//    }
-//
-//    switch (result) {
-//      case RESULT_TRANS_ACCEPTED:
-//        System.out.println("Reconciliation succeed.");
-//        break;
-//      case RESULT_NO_CONNECTION:
-//        System.out.println("Reconciliation failed - no connection.");
-//        break;
-//      default:
-//        System.out.println("Reconciliation failed.");
-//        break;
-//    }
-//  }
 
-  public String handleBatch() {
-    StringBuilder out = new StringBuilder();
+  public ResponseMessage forceReconciliation() {
+    EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_RECONCILE);
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage msg = new ResponseMessage("error");
+      msg.prompt = "Reconciliation Transaction Error when starting.";
+      msg.status = status.name();
+      return msg;
+    }
+    EcrTransactionResult result = terminalComm.readTransactionResult();
+    if (result == null) {
+      ResponseMessage msg = new ResponseMessage("error");
+      msg.prompt = "Reconciliation null error.";
+      return msg;
+    }
+
+    ResponseMessage msg;
+    switch (result) {
+      case RESULT_TRANS_ACCEPTED:
+        msg = new ResponseMessage("success");
+        msg.prompt = "Reconciliation succeeded.";
+        return msg;
+      case RESULT_NO_CONNECTION:
+        msg = new ResponseMessage("error");
+        msg.prompt = "Reconciliation failed - no connection.";
+        msg.status = result.name();
+        return msg;
+      default:
+        msg = new ResponseMessage("error");
+        msg.prompt = "Reconciliation failed.";
+        return msg;
+    }
+  }
+  public ResponseMessage handleBatch() {
+    JsonArray reports = new JsonArray();
+    JsonObject valueObject = new JsonObject();
     while (true) {
       if (getTerminalState() != EcrTerminalStatus.STATUS_BATCH_COMPLETED) {
-        return out.toString();
+        ResponseMessage msg = new ResponseMessage("success");
+        valueObject.add("reports", reports);
+        msg.value = valueObject;
+        return msg;
       }
-    out.append(printoutHandler.generateReportFromBatch());
+
+      try {
+        reports.add(printoutHandler.generateReportFromBatch());
+      }
+      catch (Exception e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt =e.getMessage();
+        return error;
+      }
     }
   }
 
