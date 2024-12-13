@@ -137,7 +137,8 @@ public class DeviceHandler {
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
-        error.prompt = e.getMessage();
+        error.prompt = "Unexpected error when getting printout.";
+        error.status = e.getMessage();
         return error;
       }
     }
@@ -189,7 +190,8 @@ public class DeviceHandler {
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
-        error.prompt = e.getMessage();
+        error.prompt = "Unexpected error when getting printout.";
+        error.status = e.getMessage();
         return error;
       }
     }
@@ -219,7 +221,6 @@ public class DeviceHandler {
     switch (result) {
       case RESULT_TRANS_ACCEPTED:
         msg = new ResponseMessage("success");
-        msg.prompt = "Reconciliation succeeded.";
         return msg;
       case RESULT_NO_CONNECTION:
         msg = new ResponseMessage("error");
@@ -229,6 +230,7 @@ public class DeviceHandler {
       default:
         msg = new ResponseMessage("error");
         msg.prompt = "Reconciliation failed.";
+        msg.status = result.name();
         return msg;
     }
   }
@@ -248,7 +250,8 @@ public class DeviceHandler {
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
-        error.prompt =e.getMessage();
+        error.prompt = "Unexpected error when generating report from batch.";
+        error.status = e.getMessage();
         return error;
       }
     }

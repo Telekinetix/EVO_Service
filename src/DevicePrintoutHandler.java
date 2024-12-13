@@ -36,10 +36,9 @@ public class DevicePrintoutHandler {
     printoutHandler.setSmallLineLength(LINE_LENGTH);
     printoutHandler.setBigLineLength(LINE_LENGTH);
 
-
     PrintoutResult result = printoutHandler.preparePrintout();
     if (result != PrintoutResult.PRINTOUT_OK) {
-      throw new Exception("Printout result error.");
+      throw new Exception(result.name());
     }
 
     JsonArray lineList = new JsonArray();
@@ -70,28 +69,27 @@ public class DevicePrintoutHandler {
     while (true) {
       status = terminalComm.setTransactionId(iterator++);
       if (status != EcrStatus.ECR_OK) {
-        throw new Exception("Set Transaction ID Error");
+        throw new Exception(status.name());
       }
 
       status = terminalComm.getSingleTransactionFromBatch();
       if (status == EcrStatus.ECR_OK) {
         result = printoutHandler.addPrintoutEntry();
       } else if (EcrStatus.ECR_NO_TERMINAL_DATA == status) {
-        System.out.println("End of data");
         break;
       } else {
-        throw new Exception("Transaction data reading error");
+        throw new Exception(status.name());
       }
     }
 
     status = terminalComm.getBatchSummary();
     if (status != EcrStatus.ECR_OK) {
-      throw new Exception("Get batch summary error");
+      throw new Exception(status.name());
     }
 
     result = printoutHandler.finishPrintout();
     if (result != PrintoutResult.PRINTOUT_OK) {
-      throw new Exception("Summary printout result error");
+      throw new Exception(result.name());
      }
 
     JsonArray lineList = new JsonArray();
