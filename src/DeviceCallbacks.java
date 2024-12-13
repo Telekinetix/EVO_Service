@@ -1,3 +1,5 @@
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import ecrlib.api.EcrCallbackDataInput;
 import ecrlib.api.EcrCallbacks;
 import ecrlib.api.enums.EcrTerminalStatus;
@@ -40,11 +42,24 @@ public class DeviceCallbacks implements EcrCallbacks {
 
   @Override
   public boolean askForSignature(String prompt) {
-    String receiptToSign = printoutHandler.generateMerchantPrintout();
-    ResponseMessage msg = new ResponseMessage("askForSignature");
-    msg.value = receiptToSign;
-    msg.prompt = prompt;
-    this.deviceHandler.sendCallbackMessage(msg);
+    JsonArray merchant;
+    try {
+      merchant = printoutHandler.generateMerchantPrintout();
+    }
+    catch (Exception e) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = e.getMessage();
+      this.deviceHandler.sendCallbackMessage(error);
+      return false;
+    }
+
+    ResponseMessage message = new ResponseMessage("askForSignature");
+    message.prompt = prompt;
+    JsonObject valueObject = new JsonObject();
+    valueObject.add("merchant", merchant);
+    message.value = valueObject;
+    this.deviceHandler.sendCallbackMessage(message);
+
     EPOSMessage response = this.deviceHandler.waitForCallbackResponse();
     String resp = response.value;
     this.deviceHandler.clearCallbackResponse();
