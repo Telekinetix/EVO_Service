@@ -165,6 +165,55 @@ public class DeviceHandler {
       return "{\"status\": \"error\"}";
     }
   }
+
+
+  public void forceReconciliation() {
+    EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_RECONCILE);
+    if (status != EcrStatus.ECR_OK) {
+      // return error
+    }
+    EcrTransactionResult result = terminalComm.readTransactionResult();
+    if (result == null) {
+
+    }
+
+
+    if (!checkTerminalStatus(EcrTerminalStatus.STATUS_READY_FOR_NEW_TRAN)
+        && !checkTerminalStatus(EcrTerminalStatus.STATUS_RECON_NEEDED)) {
+      System.out.print("Force reconciliation. Unexpected error.\n");
+      return;
+    }
+
+    status = terminalComm.setTransactionType(EcrTransactionType.TRANS_RECONCILE);
+    if (EcrStatus.ECR_OK != status) {
+      System.out.println("Setting transaction to reconciliation error.");
+      return;
+    }
+
+    status = terminalComm.startTransaction();
+    if (EcrStatus.ECR_OK != status) {
+      System.out.println("Starting reconciliation transaction error.");
+      return;
+    }
+
+    EcrTransactionResult result = terminalComm.readTransactionResult();
+    if (null == result) {
+      System.out.println("Transaction result null error.");
+      return;
+    }
+
+    switch (result) {
+      case RESULT_TRANS_ACCEPTED:
+        System.out.println("Reconciliation succeed.");
+        break;
+      case RESULT_NO_CONNECTION:
+        System.out.println("Reconciliation failed - no connection.");
+        break;
+      default:
+        System.out.println("Reconciliation failed.");
+        break;
+    }
+  }
 //
 //  public void forceConnectionTestToAuthorizationHost() {
 //    if (!getStatus()) {
