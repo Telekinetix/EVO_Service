@@ -127,7 +127,6 @@ public class Main {
       String logJson = gson.toJson(msg);
       System.out.println(logJson);
 
-
       String response = "";
 
       if (Objects.equals(msg.type, "Sale")) {
@@ -149,7 +148,7 @@ public class Main {
         response = this.deviceHandler.continueTransaction();
       }
 
-      String json = response + (char) 4 + (char) 3;
+      String json = response + (char) 4;
 
       //If processing a cancel transaction from EPOS, log the ingenico response
       formattedDate = sdf.format(new Date());
