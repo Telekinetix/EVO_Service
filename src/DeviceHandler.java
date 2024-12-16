@@ -2,6 +2,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import ecrlib.api.enums.*;
 import ecrlib.api.*;
+import ecrlib.api.tlv.Tag;
 import models.ResponseMessage;
 import models.Config;
 import models.ErrorType;
@@ -176,6 +177,7 @@ public class DeviceHandler {
     }
 
     EcrTransactionResult result = terminalComm.readTransactionResult();
+
     if (result != null) {
       try {
         JsonArray merchant = printoutHandler.generateMerchantPrintout();
@@ -184,6 +186,11 @@ public class DeviceHandler {
         JsonObject valueObject = new JsonObject();
         valueObject.add("merchant", merchant);
         valueObject.add("customer", customer);
+        valueObject.addProperty("transactionNumber", terminalComm.readTransactionNumber());
+        Tag cardType = terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME);
+        valueObject.addProperty("cardType", cardType.toString());
+        response.status = result.name();
+        terminalComm.readTransactionNumber();
 
         response.value = valueObject;
         return response;
@@ -192,6 +199,7 @@ public class DeviceHandler {
         ResponseMessage error = new ResponseMessage("error");
         error.prompt = "Unexpected error when getting printout.";
         error.status = e.getMessage();
+
         return error;
       }
     }
