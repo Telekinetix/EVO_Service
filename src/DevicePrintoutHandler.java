@@ -69,7 +69,7 @@ public class DevicePrintoutHandler {
     while (true) {
       status = terminalComm.setTransactionId(iterator++);
       if (status != EcrStatus.ECR_OK) {
-        throw new Exception(status.name());
+        throw new Exception(status.name() + " - setTransactionId");
       }
 
       status = terminalComm.getSingleTransactionFromBatch();
@@ -78,18 +78,18 @@ public class DevicePrintoutHandler {
       } else if (EcrStatus.ECR_NO_TERMINAL_DATA == status) {
         break;
       } else {
-        throw new Exception(status.name());
+        throw new Exception(status.name() + " - getSingleTransactionFromBatch");
       }
     }
 
     status = terminalComm.getBatchSummary();
     if (status != EcrStatus.ECR_OK) {
-      throw new Exception(status.name());
+      throw new Exception(status.name() + " - getBatchSummary");
     }
 
     result = printoutHandler.finishPrintout();
     if (result != PrintoutResult.PRINTOUT_OK) {
-      throw new Exception(result.name());
+      throw new Exception(result.name() + " - finishPrintout");
      }
 
     JsonArray lineList = new JsonArray();

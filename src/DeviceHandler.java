@@ -11,6 +11,7 @@ import models.EPOSMessage;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class DeviceHandler {
@@ -188,7 +189,7 @@ public class DeviceHandler {
         valueObject.add("customer", customer);
         valueObject.addProperty("transactionNumber", terminalComm.readTransactionNumber());
         Tag cardType = terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME);
-        valueObject.addProperty("cardType", cardType.toString());
+        valueObject.addProperty("cardType", Base64.getEncoder().encodeToString(cardType.getData()));
         response.status = result.name();
         terminalComm.readTransactionNumber();
 
