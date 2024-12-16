@@ -190,11 +190,9 @@ public class DeviceHandler {
         valueObject.addProperty("transactionNumber", terminalComm.readTransactionNumber());
         Tag cardType = terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME);
         Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
-        Tag refNum = terminalComm.readTag(TlvTag.TAG_REFERENCE_NUMBER);
 
         valueObject.addProperty("cardType", new String(cardType.getData(), "Cp1250"));
         valueObject.addProperty("transDirect", new String(transactionNumber.getData(), "Cp1250"));
-        valueObject.addProperty("refNum", new String(refNum.getData(), "Cp1250"));
         response.status = result.name();
 
         response.value = valueObject;
