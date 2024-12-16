@@ -187,12 +187,10 @@ public class DeviceHandler {
         JsonObject valueObject = new JsonObject();
         valueObject.add("merchant", merchant);
         valueObject.add("customer", customer);
-        valueObject.addProperty("transactionNumber", terminalComm.readTransactionNumber());
         Tag cardType = terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME);
         Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
-
         valueObject.addProperty("cardType", new String(cardType.getData(), "Cp1250"));
-        valueObject.addProperty("transDirect", new String(transactionNumber.getData(), "Cp1250"));
+        valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
         response.status = result.name();
 
         response.value = valueObject;
