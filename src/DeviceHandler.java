@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 
 public class DeviceHandler {
 
@@ -53,7 +54,13 @@ public class DeviceHandler {
     }
   }
 
+  private ResponseMessage lastMsg;
   public void sendCallbackMessage(ResponseMessage msg) {
+    if (lastMsg != null && Objects.equals(msg.type, lastMsg.type) && Objects.equals(msg.prompt, lastMsg.prompt)) {
+      return;
+    }
+
+    lastMsg = msg;
     String json = Main.gson.toJson(msg) + (char) 3;
     System.out.println(json);
     if (this.eposOutput == null) {
