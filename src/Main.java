@@ -137,6 +137,9 @@ public class Main {
       else if (Objects.equals(msg.type, "Refund")) {
         responseMessage = this.deviceHandler.doRefund(msg.value);
       }
+      else if (Objects.equals(msg.type, "Reversal")) {
+        responseMessage = this.deviceHandler.doReversal(msg.value, msg.evoTransId);
+      }
       else if (Objects.equals(msg.type, "Status")) {
         EcrTerminalStatus res = this.deviceHandler.getTerminalState();
         responseMessage = new ResponseMessage("success");

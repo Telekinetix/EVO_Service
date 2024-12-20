@@ -277,6 +277,75 @@ public class DeviceHandler {
       return error;
     }
   }
+
+  public ResponseMessage doReversal(String amount, String transactionId) {
+    EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_REVERSAL);
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting transaction type.";
+      error.status = status.name();
+      return error;
+    }
+
+    status = terminalComm.setNumberOfTransactionToReverse(transactionId);
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting transaction id.";
+      error.status = status.name();
+      return error;
+    }
+
+    status = terminalComm.setTransactionAmount(amount);
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting transaction amount.";
+      error.status = status.name();
+      return error;
+    }
+
+    status = terminalComm.startTransaction();
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting starting transaction.";
+      error.status = status.name();
+      return error;
+      // return emergencyProcedureForTransaction(true);
+    }
+
+    EcrTransactionResult result = terminalComm.readTransactionResult();
+
+    if (result != null) {
+      try {
+        JsonArray merchant = printoutHandler.generateMerchantPrintout();
+        JsonArray customer = printoutHandler.generateCustomerPrintout();
+        ResponseMessage response = new ResponseMessage("success");
+        JsonObject valueObject = new JsonObject();
+        valueObject.add("merchant", merchant);
+        valueObject.add("customer", customer);
+        Tag cardType = terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME);
+        Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
+        valueObject.addProperty("cardType", new String(cardType.getData(), "Cp1250"));
+        valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
+        response.status = result.name();
+
+        response.value = valueObject;
+        return response;
+      }
+      catch (Exception e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when getting printout.";
+        error.status = e.getMessage();
+
+        return error;
+      }
+    }
+    else {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when reading transaction result.";
+      return error;
+    }
+  }
+
   public ResponseMessage forceReconciliation() {
     EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_RECONCILE);
     if (status != EcrStatus.ECR_OK) {
