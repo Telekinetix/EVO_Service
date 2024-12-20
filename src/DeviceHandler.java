@@ -354,6 +354,15 @@ public class DeviceHandler {
       msg.status = status.name();
       return msg;
     }
+
+    status = terminalComm.startTransaction();
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when starting transaction.";
+      error.status = status.name();
+      return error;
+    }
+
     EcrTransactionResult result = terminalComm.readTransactionResult();
     if (result == null) {
       ResponseMessage msg = new ResponseMessage("error");
