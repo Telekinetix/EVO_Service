@@ -10,6 +10,7 @@ import models.EPOSMessage;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -198,10 +199,24 @@ public class DeviceHandler {
         Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
         valueObject.addProperty("cardType", new String(cardType.getData(), "Cp1250"));
         valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
+        valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
+        valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
         response.status = result.name();
 
         response.value = valueObject;
         return response;
+      }
+      catch (NullPointerException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when accessing tags.";
+        error.status = e.getMessage();
+        return error;
+      }
+      catch (UnsupportedEncodingException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when decoding tags.";
+        error.status = e.getMessage();
+        return error;
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
@@ -256,12 +271,27 @@ public class DeviceHandler {
         valueObject.add("customer", customer);
         Tag cardType = terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME);
         Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
+
         valueObject.addProperty("cardType", new String(cardType.getData(), "Cp1250"));
         valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
+        valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
+        valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
         response.status = result.name();
 
         response.value = valueObject;
         return response;
+      }
+      catch (NullPointerException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when accessing tags.";
+        error.status = e.getMessage();
+        return error;
+      }
+      catch (UnsupportedEncodingException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when decoding tags.";
+        error.status = e.getMessage();
+        return error;
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
@@ -326,10 +356,24 @@ public class DeviceHandler {
         Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
         valueObject.addProperty("cardType", new String(cardType.getData(), "Cp1250"));
         valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
+        valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
+        valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
         response.status = result.name();
 
         response.value = valueObject;
         return response;
+      }
+      catch (NullPointerException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when accessing tags.";
+        error.status = e.getMessage();
+        return error;
+      }
+      catch (UnsupportedEncodingException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when decoding tags.";
+        error.status = e.getMessage();
+        return error;
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
@@ -390,8 +434,9 @@ public class DeviceHandler {
   public ResponseMessage handleBatch() {
     JsonArray reports = new JsonArray();
     JsonObject valueObject = new JsonObject();
+    boolean shouldBreak = false;
     while (true) {
-      if (getTerminalState() != EcrTerminalStatus.STATUS_BATCH_COMPLETED) {
+      if (terminalComm.readTerminalStatus() != EcrTerminalStatus.STATUS_BATCH_COMPLETED || shouldBreak) {
         ResponseMessage msg = new ResponseMessage("success");
         valueObject.add("reports", reports);
         msg.value = valueObject;
@@ -399,7 +444,24 @@ public class DeviceHandler {
       }
 
       try {
-        reports.add(printoutHandler.generateReportFromBatch());
+        JsonArray arr = printoutHandler.getTransactionsFromBatch();
+        if (arr.isEmpty()) {
+          shouldBreak = true;
+          continue;
+        }
+        reports.add(arr);
+      }
+      catch (NullPointerException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when accessing tags.";
+        error.status = e.getMessage();
+        return error;
+      }
+      catch (UnsupportedEncodingException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when decoding tags.";
+        error.status = e.getMessage();
+        return error;
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
@@ -407,6 +469,49 @@ public class DeviceHandler {
         error.status = e.getMessage();
         return error;
       }
+    }
+  }
+
+  public ResponseMessage getLastTransaction() {
+    EcrStatus status = terminalComm.getLastTransactionData();
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when getting last transaction.";
+      error.status = status.name();
+      return error;
+    }
+
+    try {
+      JsonObject valueObject = new JsonObject();
+      valueObject.addProperty("cardType", new String(terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME).getData(), "Cp1250"));
+      valueObject.addProperty("transactionNumber", new String(terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER).getData(), "Cp1250"));
+      valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
+      valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
+      valueObject.addProperty("amount", terminalComm.readTransactionAmount());
+      valueObject.addProperty("date", terminalComm.readTransactionDate());
+      valueObject.addProperty("time", terminalComm.readTransactionTime());
+
+      ResponseMessage msg = new ResponseMessage("success");
+      msg.value = valueObject;
+      return msg;
+    }
+    catch (NullPointerException e) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when accessing tags.";
+      error.status = e.getMessage();
+      return error;
+    }
+    catch (UnsupportedEncodingException e) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when decoding tags.";
+      error.status = e.getMessage();
+      return error;
+    }
+    catch (Exception e) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when getting printout.";
+      error.status = e.getMessage();
+      return error;
     }
   }
 

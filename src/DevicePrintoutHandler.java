@@ -5,11 +5,10 @@ import ecrlib.api.EcrPaymentTerminal;
 import ecrlib.api.EcrPrintoutLine;
 import ecrlib.api.ExtendedPrintoutHandler;
 import ecrlib.api.SimplePrintoutHandler;
-import ecrlib.api.enums.AuthorizationMethod;
-import ecrlib.api.enums.EcrStatus;
-import ecrlib.api.enums.EcrTransactionResult;
-import ecrlib.api.enums.PrintoutResult;
+import ecrlib.api.enums.*;
+import ecrlib.api.tlv.Tag;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,19 +50,9 @@ public class DevicePrintoutHandler {
     return lineList;
   }
 
-  public JsonArray generateReportFromBatch() throws Exception {
+  public JsonArray getTransactionsFromBatch() throws Exception {
     EcrStatus status;
-
-    ExtendedPrintoutHandler printoutHandler = terminalComm.getClosingDayPrintoutHandler();
-
-    printoutHandler.setNormalLineLength(LINE_LENGTH);
-    printoutHandler.setSmallLineLength(LINE_LENGTH);
-    printoutHandler.setBigLineLength(LINE_LENGTH);
-
-    PrintoutResult result = printoutHandler.startPrintout();
-    if (PrintoutResult.PRINTOUT_OK != result) {
-        throw new Exception("Start Error");
-    }
+    JsonArray transList = new JsonArray();
 
     int iterator = 1;
     while (true) {
@@ -74,31 +63,31 @@ public class DevicePrintoutHandler {
 
       status = terminalComm.getSingleTransactionFromBatch();
       if (status == EcrStatus.ECR_OK) {
-        result = printoutHandler.addPrintoutEntry();
-      } else if (EcrStatus.ECR_NO_TERMINAL_DATA == status) {
+        JsonObject valueObject = new JsonObject();
+        valueObject.addProperty("cardType", new String(terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME).getData(), "Cp1250"));
+        valueObject.addProperty("transactionNumber", new String(terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER).getData(), "Cp1250"));
+        valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
+        valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
+        valueObject.addProperty("amount", terminalComm.readTransactionAmount());
+        valueObject.addProperty("date", terminalComm.readTransactionDate());
+        valueObject.addProperty("time", terminalComm.readTransactionTime());
+        transList.add(valueObject);
+      } else if (status == EcrStatus.ECR_NO_TERMINAL_DATA) {
         break;
       } else {
         throw new Exception(status.name() + " - getSingleTransactionFromBatch");
       }
     }
 
+    if (transList.isEmpty()) {
+      return transList;
+    }
     status = terminalComm.getBatchSummary();
     if (status != EcrStatus.ECR_OK) {
       throw new Exception(status.name() + " - getBatchSummary");
     }
 
-    result = printoutHandler.finishPrintout();
-    if (result != PrintoutResult.PRINTOUT_OK) {
-      throw new Exception(result.name() + " - finishPrintout");
-     }
-
-    JsonArray lineList = new JsonArray();
-    int lines = printoutHandler.getNumberOfLines();
-    for (int i=0; i<lines; i++) {
-      EcrPrintoutLine line = printoutHandler.getNextLine();
-      lineList.add(line.getText());
-    }
-    return lineList;
+    return transList;
   }
 
   public boolean isMerchantPrintoutNecessary() {
