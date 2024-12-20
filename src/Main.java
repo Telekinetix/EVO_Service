@@ -154,6 +154,9 @@ public class Main {
       else if (Objects.equals(msg.type, "Continue")) {
         responseMessage = this.deviceHandler.continueTransaction();
       }
+      else if (Objects.equals(msg.type, "Last")) {
+        responseMessage = this.deviceHandler.getLastTransaction();
+      }
       else if (Objects.equals(msg.type, "Response")) {
         this.deviceHandler.setCallbackResponse(msg);
         return;
