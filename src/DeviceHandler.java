@@ -120,8 +120,16 @@ public class DeviceHandler {
     return terminalComm.getTerminalStatus();
   }
 
-  public EcrTerminalStatus getTerminalState() {
-    return terminalComm.readTerminalStatus();
+  public ResponseMessage getTerminalState() {
+    EcrTerminalStatus status = terminalComm.readTerminalStatus();
+    if (status == null) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when getting terminal status.";
+      return error;
+    }
+    ResponseMessage response = new ResponseMessage("success");
+    response.status = status.name();
+    return response;
   }
 
   public ResponseMessage continueTransaction() {

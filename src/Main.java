@@ -141,9 +141,7 @@ public class Main {
         responseMessage = this.deviceHandler.doReversal(msg.value, msg.evoTransId);
       }
       else if (Objects.equals(msg.type, "Status")) {
-        EcrTerminalStatus res = this.deviceHandler.getTerminalState();
-        responseMessage = new ResponseMessage("success");
-        responseMessage.status = res.name();
+        responseMessage = this.deviceHandler.getTerminalState();
       }
       else if (Objects.equals(msg.type, "Batch")) {
         responseMessage = this.deviceHandler.handleBatch();
