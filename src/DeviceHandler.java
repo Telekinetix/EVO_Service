@@ -541,6 +541,12 @@ public class DeviceHandler {
       valueObject.addProperty("amount", terminalComm.readTransactionAmount());
       valueObject.addProperty("date", terminalComm.readTransactionDate());
       valueObject.addProperty("time", terminalComm.readTransactionTime());
+      String type = new String(terminalComm.readTag(TlvTag.TAG_TRANSACTION_TYPE).getData(), "Cp1250");
+      valueObject.addProperty("type", type);
+      if (type.equals("5")) {
+        valueObject.addProperty("originalType", new String(terminalComm.readTag(TlvTag.TAG_ORIGINAL_TRANSACTION_TYPE).getData(), "Cp1250"));
+      }
+      valueObject.addProperty("authorisationType", new String(terminalComm.readTag(TlvTag.TAG_AUTHORIZATION_TYPE).getData(), "Cp1250"));
 
       ResponseMessage msg = new ResponseMessage("success");
       msg.value = valueObject;
