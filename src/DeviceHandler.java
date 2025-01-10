@@ -442,16 +442,7 @@ public class DeviceHandler {
   }
 
   public ResponseMessage forceReconciliation() {
-    EcrStatus status = terminalComm.setResetReport(true);
-    if (status != EcrStatus.ECR_OK)
-    {
-      ResponseMessage msg = new ResponseMessage("error");
-      msg.prompt = "Reconciliation Transaction Error when resetting report.";
-      msg.status = status.name();
-      return msg;
-    }
-    
-    status = terminalComm.setTransactionType(EcrTransactionType.TRANS_RECONCILE);
+    EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_RECONCILE);
     if (status != EcrStatus.ECR_OK) {
       ResponseMessage msg = new ResponseMessage("error");
       msg.prompt = "Reconciliation Transaction Error when starting.";
