@@ -71,8 +71,11 @@ public class DevicePrintoutHandler {
         valueObject.addProperty("amount", terminalComm.readTransactionAmount());
         valueObject.addProperty("date", terminalComm.readTransactionDate());
         valueObject.addProperty("time", terminalComm.readTransactionTime());
-        valueObject.addProperty("originalType", new String(terminalComm.readTag(TlvTag.TAG_ORIGINAL_TRANSACTION_TYPE).getData(), "Cp1250"));
-        valueObject.addProperty("type", new String(terminalComm.readTag(TlvTag.TAG_TRANSACTION_TYPE).getData(), "Cp1250"));
+        String type = new String(terminalComm.readTag(TlvTag.TAG_TRANSACTION_TYPE).getData(), "Cp1250");
+        valueObject.addProperty("type", type);
+        if (type.equals("5")) {
+          valueObject.addProperty("originalType", new String(terminalComm.readTag(TlvTag.TAG_ORIGINAL_TRANSACTION_TYPE).getData(), "Cp1250"));
+        }
         valueObject.addProperty("authorisationType", new String(terminalComm.readTag(TlvTag.TAG_AUTHORIZATION_TYPE).getData(), "Cp1250"));
         transList.add(valueObject);
       } else if (status == EcrStatus.ECR_NO_TERMINAL_DATA) {
