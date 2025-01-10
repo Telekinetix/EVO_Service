@@ -125,6 +125,7 @@ public class DeviceHandler {
     if (status == null) {
       ResponseMessage error = new ResponseMessage("error");
       error.prompt = "Unexpected error when getting terminal status.";
+      error.status = "TK_TERMINAL_CONNECTION_ERROR";
       return error;
     }
     ResponseMessage response = new ResponseMessage("success");
