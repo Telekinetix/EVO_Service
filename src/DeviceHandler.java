@@ -133,6 +133,48 @@ public class DeviceHandler {
     return response;
   }
 
+  public ResponseMessage testConnection() {
+    EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_TEST_CONNECTION);
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when setting transaction type on terminal.";
+      error.status = status.name();
+      return error;
+    }
+
+    status = terminalComm.startTransaction();
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when testing connection to payment authorisation host.";
+      error.status = status.name();
+      return error;
+    }
+
+    EcrTransactionResult result = terminalComm.readTransactionResult();
+    if (result == null) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when getting result of connection test to payment authorisation host.";
+      error.status = "TK_TEST_CONNECTION_RESULT_ERROR";
+      return error;
+    }
+    ResponseMessage response = new ResponseMessage("success");
+    response.status = status.name();
+    return response;
+  }
+
+  public ResponseMessage update() {
+    EcrStatus status = terminalComm.setTransactionType(EcrTransactionType.TRANS_TMS);
+    if (status != EcrStatus.ECR_OK) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when updating terminal from TMS.";
+      error.status = status.name();
+      return error;
+    }
+
+    terminalComm.startTransaction();
+    return new ResponseMessage("success");
+  }
+
   public ResponseMessage continueTransaction() {
     EcrStatus status = terminalComm.continueTransaction();
     if (EcrStatus.ECR_OK != status) {

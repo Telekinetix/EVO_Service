@@ -155,9 +155,12 @@ public class Main {
       else if (Objects.equals(msg.type, "Last")) {
         responseMessage = this.deviceHandler.getLastTransaction();
       }
-//      else if (Objects.equals(msg.type, "Test")) {
-//        responseMessage = this.deviceHandler.testConnection();
-//      }
+      else if (Objects.equals(msg.type, "Test")) {
+        responseMessage = this.deviceHandler.testConnection();
+      }
+      else if (Objects.equals(msg.type, "Update")) {
+        responseMessage = this.deviceHandler.update();
+      }
       else if (Objects.equals(msg.type, "Response")) {
         this.deviceHandler.setCallbackResponse(msg);
         return;
