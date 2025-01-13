@@ -84,10 +84,6 @@ public class DevicePrintoutHandler {
         throw new Exception(status.name() + " - getSingleTransactionFromBatch");
       }
     }
-
-    if (transList.isEmpty()) {
-      return transList;
-    }
     status = terminalComm.getBatchSummary();
     if (status != EcrStatus.ECR_OK) {
       throw new Exception(status.name() + " - getBatchSummary");
