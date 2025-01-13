@@ -464,11 +464,17 @@ public class DeviceHandler {
       msg.prompt = "Reconciliation null error.";
       return msg;
     }
-
     ResponseMessage msg;
     switch (result) {
       case RESULT_TRANS_ACCEPTED:
         msg = new ResponseMessage("success");
+        Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
+        JsonObject valueObject = new JsonObject();
+
+        valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
+
+        valueObject.addProperty("reconcileId", result.getId());
+        msg.value = valueObject;
         return msg;
       case RESULT_NO_CONNECTION:
         msg = new ResponseMessage("error");
@@ -483,43 +489,38 @@ public class DeviceHandler {
     }
   }
   public ResponseMessage handleBatch() {
-    JsonArray reports = new JsonArray();
-    JsonObject valueObject = new JsonObject();
-    boolean shouldBreak = false;
-    while (true) {
-      if (terminalComm.readTerminalStatus() != EcrTerminalStatus.STATUS_BATCH_COMPLETED || shouldBreak) {
-        ResponseMessage msg = new ResponseMessage("success");
-        valueObject.add("reports", reports);
-        msg.value = valueObject;
-        return msg;
-      }
+    if (terminalComm.readTerminalStatus() != EcrTerminalStatus.STATUS_BATCH_COMPLETED) {
+      ResponseMessage msg = new ResponseMessage("error");
+      msg.prompt = "Unexpected invocation of handleBatch: Status is not STATUS_BATCH_COMPLETED";
+      msg.status = "TK_UNEXPECTED_HANDLE_BATCH";
+      return msg;
+    }
 
-      try {
-        JsonArray arr = printoutHandler.getTransactionsFromBatch();
-        if (arr.isEmpty()) {
-          shouldBreak = true;
-          continue;
-        }
-        reports.add(arr);
-      }
-      catch (NullPointerException e) {
-        ResponseMessage error = new ResponseMessage("error");
-        error.prompt = "Unexpected error when accessing tags.";
-        error.status = e.getMessage();
-        return error;
-      }
-      catch (UnsupportedEncodingException e) {
-        ResponseMessage error = new ResponseMessage("error");
-        error.prompt = "Unexpected error when decoding tags.";
-        error.status = e.getMessage();
-        return error;
-      }
-      catch (Exception e) {
-        ResponseMessage error = new ResponseMessage("error");
-        error.prompt = "Unexpected error when generating report from batch.";
-        error.status = e.getMessage();
-        return error;
-      }
+    try {
+      JsonArray arr = printoutHandler.getTransactionsFromBatch();
+      ResponseMessage msg = new ResponseMessage("success");
+      JsonObject valueObject = new JsonObject();
+      valueObject.add("batch", arr);
+      msg.value = valueObject;
+      return msg;
+    }
+    catch (NullPointerException e) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when accessing tags.";
+      error.status = e.getMessage();
+      return error;
+    }
+    catch (UnsupportedEncodingException e) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when decoding tags.";
+      error.status = e.getMessage();
+      return error;
+    }
+    catch (Exception e) {
+      ResponseMessage error = new ResponseMessage("error");
+      error.prompt = "Unexpected error when generating report from batch.";
+      error.status = e.getMessage();
+      return error;
     }
   }
 
