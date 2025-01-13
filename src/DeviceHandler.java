@@ -471,10 +471,7 @@ public class DeviceHandler {
           msg = new ResponseMessage("success");
           Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
           JsonObject valueObject = new JsonObject();
-
           valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
-
-          valueObject.addProperty("reconcileId", result.getId());
           msg.value = valueObject;
           return msg;
         }
