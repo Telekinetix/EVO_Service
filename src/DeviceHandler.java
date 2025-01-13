@@ -467,15 +467,29 @@ public class DeviceHandler {
     ResponseMessage msg;
     switch (result) {
       case RESULT_TRANS_ACCEPTED:
-        msg = new ResponseMessage("success");
-        Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
-        JsonObject valueObject = new JsonObject();
+        try {
+          msg = new ResponseMessage("success");
+          Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
+          JsonObject valueObject = new JsonObject();
 
-        valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
+          valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
 
-        valueObject.addProperty("reconcileId", result.getId());
-        msg.value = valueObject;
-        return msg;
+          valueObject.addProperty("reconcileId", result.getId());
+          msg.value = valueObject;
+          return msg;
+        }
+        catch (NullPointerException e) {
+          ResponseMessage error = new ResponseMessage("error");
+          error.prompt = "Unexpected error when accessing tags.";
+          error.status = e.getMessage();
+          return error;
+        }
+        catch (UnsupportedEncodingException e) {
+          ResponseMessage error = new ResponseMessage("error");
+          error.prompt = "Unexpected error when decoding tags.";
+          error.status = e.getMessage();
+          return error;
+        }
       case RESULT_NO_CONNECTION:
         msg = new ResponseMessage("error");
         msg.prompt = "Reconciliation failed - no connection.";
