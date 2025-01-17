@@ -193,8 +193,28 @@ public class DeviceHandler {
         JsonObject valueObject = new JsonObject();
         valueObject.add("merchant", merchant);
         valueObject.add("customer", customer);
+        Tag cardType = terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME);
+        Tag transactionNumber = terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER);
+        valueObject.addProperty("cardType", new String(cardType.getData(), "Cp1250"));
+        valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
+        valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
+        valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
+        response.status = result.name();
+
         response.value = valueObject;
         return response;
+      }
+      catch (NullPointerException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when accessing tags.";
+        error.status = e.getMessage();
+        return error;
+      }
+      catch (UnsupportedEncodingException e) {
+        ResponseMessage error = new ResponseMessage("error");
+        error.prompt = "Unexpected error when decoding tags.";
+        error.status = e.getMessage();
+        return error;
       }
       catch (Exception e) {
         ResponseMessage error = new ResponseMessage("error");
