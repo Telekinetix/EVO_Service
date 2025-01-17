@@ -130,6 +130,9 @@ public class DeviceCallbacks implements EcrCallbacks {
     ResponseMessage msg = new ResponseMessage("showOkScreen");
     msg.prompt = prompt;
     this.deviceHandler.sendCallbackMessage(msg);
+    this.deviceHandler.waitForCallbackResponse();
+    this.deviceHandler.clearCallbackResponse();
+    return;
   }
 
   @Override
