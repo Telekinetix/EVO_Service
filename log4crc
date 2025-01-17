@@ -14,9 +14,9 @@
 	<category name="communicationFile" priority="trace" appender="commFileAppender"/>
 	<category name="businessFile" priority="trace" appender="busFileAppender"/>
 
-	<rollingpolicy name="myrollingpolicy1" type="sizewin" maxsize="2560000" maxnum="20" />
-	<rollingpolicy name="myrollingpolicy2" type="sizewin" maxsize="2560000" maxnum="20" />
-	<rollingpolicy name="myrollingpolicy3" type="sizewin" maxsize="2560000" maxnum="20" />
+	<rollingpolicy name="myrollingpolicy1" type="sizewin" maxsize="5120000" maxnum="100" />
+	<rollingpolicy name="myrollingpolicy2" type="sizewin" maxsize="5120000" maxnum="100" />
+	<rollingpolicy name="myrollingpolicy3" type="sizewin" maxsize="5120000" maxnum="100" />
 
 	<appender name="devFileAppender" type="rollingfile" logdir="." prefix="dev" layout="dated" rollingpolicy="myrollingpolicy1" />
 	<appender name="commFileAppender" type="rollingfile" logdir="." prefix="comm" layout="dated" rollingpolicy="myrollingpolicy2" />
