@@ -199,6 +199,8 @@ public class DeviceHandler {
         valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
         valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
         valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
+        valueObject.addProperty("amount", terminalComm.readTransactionAmount());
+        valueObject.addProperty("exchangeRate", terminalComm.readTransactionExchangeRate());
         response.status = result.name();
 
         response.value = valueObject;
@@ -272,6 +274,8 @@ public class DeviceHandler {
         valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
         valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
         valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
+        valueObject.addProperty("amount", terminalComm.readTransactionAmount());
+        valueObject.addProperty("exchangeRate", terminalComm.readTransactionExchangeRate());
         response.status = result.name();
 
         response.value = valueObject;
@@ -347,6 +351,8 @@ public class DeviceHandler {
         valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
         valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
         valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
+        valueObject.addProperty("amount", terminalComm.readTransactionAmount());
+        valueObject.addProperty("exchangeRate", terminalComm.readTransactionExchangeRate());
         response.status = result.name();
 
         response.value = valueObject;
@@ -429,6 +435,8 @@ public class DeviceHandler {
         valueObject.addProperty("transactionNumber", new String(transactionNumber.getData(), "Cp1250"));
         valueObject.addProperty("pan", new String(terminalComm.readTag(TlvTag.TAG_MASKED_PAN).getData(), "Cp1250"));
         valueObject.addProperty("currencyCode", terminalComm.readTransactionCurrencyLabel());
+        valueObject.addProperty("amount", terminalComm.readTransactionAmount());
+        valueObject.addProperty("exchangeRate", terminalComm.readTransactionExchangeRate());
         response.status = result.name();
 
         response.value = valueObject;
