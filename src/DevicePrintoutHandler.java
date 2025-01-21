@@ -50,9 +50,20 @@ public class DevicePrintoutHandler {
     return lineList;
   }
 
-  public JsonArray getTransactionsFromBatch() throws Exception {
+  public JsonObject getTransactionsFromBatch() throws Exception {
+    JsonObject res = new JsonObject();
     EcrStatus status;
     JsonArray transList = new JsonArray();
+    ExtendedPrintoutHandler printoutHandler = terminalComm.getClosingDayPrintoutHandler();
+    printoutHandler.setNormalLineLength(LINE_LENGTH);
+    printoutHandler.setSmallLineLength(LINE_LENGTH);
+    printoutHandler.setBigLineLength(LINE_LENGTH);
+
+    PrintoutResult result = printoutHandler.startPrintout();
+
+    if (result != PrintoutResult.PRINTOUT_OK) {
+      throw new Exception(result.toString() + " - startPrintout");
+    }
 
     int iterator = 1;
     while (true) {
@@ -63,6 +74,7 @@ public class DevicePrintoutHandler {
 
       status = terminalComm.getSingleTransactionFromBatch();
       if (status == EcrStatus.ECR_OK) {
+        printoutHandler.addPrintoutEntry();
         JsonObject valueObject = new JsonObject();
         valueObject.addProperty("cardType", new String(terminalComm.readTag(TlvTag.TAG_APP_PREFERRED_NAME).getData(), "Cp1250"));
         valueObject.addProperty("transactionNumber", new String(terminalComm.readTag(TlvTag.TAG_TRANSACTION_NUMBER).getData(), "Cp1250"));
@@ -90,22 +102,23 @@ public class DevicePrintoutHandler {
     if (status != EcrStatus.ECR_OK) {
       throw new Exception(status.name() + " - getBatchSummary");
     }
+    result = printoutHandler.finishPrintout();
 
-    return transList;
-  }
-
-  public boolean isMerchantPrintoutNecessary() {
-    AuthorizationMethod method = terminalComm.readAuthorizationMethod();
-
-    if (method != AuthorizationMethod.AUTH_METHOD_SIGN && method != AuthorizationMethod.AUTH_METHOD_PIN_SIGN) {
-      return true;
+    if (result != PrintoutResult.PRINTOUT_OK) {
+      throw new Exception(result.toString() + " - finishPrintout");
     }
 
-    EcrTransactionResult result = terminalComm.readTransactionResult();
+    JsonArray printoutLines = new JsonArray();
 
-    if (result != EcrTransactionResult.RESULT_TRANS_ACCEPTED) {
-      return true;
+    int lines = printoutHandler.getNumberOfLines();
+    for (int i=0; i<lines; i++) {
+      EcrPrintoutLine line = printoutHandler.getNextLine();
+      printoutLines.add(Main.gson.toJsonTree(line));
     }
-    return false;
+
+    res.add("receipt", printoutLines);
+    res.add("transactions", transList);
+    return res;
   }
+
 }

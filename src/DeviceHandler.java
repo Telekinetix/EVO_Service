@@ -536,11 +536,9 @@ public class DeviceHandler {
     }
 
     try {
-      JsonArray arr = printoutHandler.getTransactionsFromBatch();
+      JsonObject batch = printoutHandler.getTransactionsFromBatch();
       ResponseMessage msg = new ResponseMessage("success");
-      JsonObject valueObject = new JsonObject();
-      valueObject.add("batch", arr);
-      msg.value = valueObject;
+      msg.value = batch;
       return msg;
     }
     catch (NullPointerException e) {
