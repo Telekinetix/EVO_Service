@@ -18,9 +18,9 @@
 	<rollingpolicy name="myrollingpolicy2" type="sizewin" maxsize="5120000" maxnum="100" />
 	<rollingpolicy name="myrollingpolicy3" type="sizewin" maxsize="5120000" maxnum="100" />
 
-	<appender name="devFileAppender" type="rollingfile" logdir="." prefix="dev" layout="dated" rollingpolicy="myrollingpolicy1" />
-	<appender name="commFileAppender" type="rollingfile" logdir="." prefix="comm" layout="dated" rollingpolicy="myrollingpolicy2" />
-	<appender name="busFileAppender" type="rollingfile" logdir="." prefix="bus" layout="dated" rollingpolicy="myrollingpolicy3" />
+	<appender name="devFileAppender" type="rollingfile" logdir="./logs" prefix="dev" layout="dated" rollingpolicy="myrollingpolicy1" />
+	<appender name="commFileAppender" type="rollingfile" logdir="./logs" prefix="comm" layout="dated" rollingpolicy="myrollingpolicy2" />
+	<appender name="busFileAppender" type="rollingfile" logdir="./logs" prefix="bus" layout="dated" rollingpolicy="myrollingpolicy3" />
 	
 	<!-- default appenders ===================================== -->
 	<appender name="stdout" type="stream" layout="basic"/>

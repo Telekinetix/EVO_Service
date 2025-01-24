@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="EVOPay-Service:jar">
+    <output-path>$PROJECT_DIR$/build</output-path>
+    <root id="archive" name="EVOPay-Service.jar">
+      <element id="module-output" name="EVO_Service" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/gson-2.10.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/ecrlib.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

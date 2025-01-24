@@ -1,0 +1,16 @@
+<service>
+  <id>evopay-service</id>
+  <name>EVOPay-Service</name>
+  <description>This service runs the EPOS EVO Payments gateway system.</description>
+  <executable>%BASE%\jre\bin\java.exe</executable>
+  <arguments>-jar "%BASE%\EVOPay-Service.jar"</arguments>
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-time">
+    <pattern>yyyyMMdd</pattern>
+    <keepFiles>8</keepFiles>
+  </log>
+  <onfailure action="restart" delay="5 sec"/>
+  <onfailure action="restart" delay="5 sec"/>
+  <onfailure action="none" />
+  <resetfailure>10 min</resetfailure>
+</service>
