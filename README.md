@@ -4,8 +4,9 @@ This is Java based application with a windows service wrapper to act as a bridge
 All development has been done in IntelliJ, using Java JDK 1.8.0_281 (consistent with the library provided).
 
 Required Libraries:
-Gson - v2.10.1 - Java library that can be used to convert Java Objects into their JSON representation https://github.com/google/gson
-ecrli.jar - v14.1.0 - EVO Payments SDK
+* Gson - v2.10.1 - Java library that can be used to convert Java Objects into their JSON representation https://github.com/google/gson
+* ecrli.jar - v14.1.0 - EVO Payments SDK
+
 These libraries have been included in the lib/ folder, and should be correctly setup within the IntelliJ project already.
 
 Config
